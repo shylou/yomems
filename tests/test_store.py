@@ -514,6 +514,114 @@ class YOMemsStoreTests(unittest.TestCase):
             self.assertIn("是否保存到 .yomems？", fresh_payload["prompt"])
             self.assertEqual(fresh_payload["memory"]["kind"], "project_decision")
 
+    def test_archive_and_supersede_update_lifecycle_status(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="yomems-store-") as tmp_dir:
+            root = Path(tmp_dir) / ".yomems"
+            self.run_cli("init", "--root", str(root))
+
+            decision = Path(tmp_dir) / "decision.json"
+            decision.write_text(
+                json.dumps(
+                    {
+                        "id": "dec_review_001",
+                        "kind": "project_decision",
+                        "scope": "project",
+                        "project": "yomems",
+                        "topic": "review",
+                        "content": "Review should happen before task closure."
+                    }
+                )
+            )
+            lesson = Path(tmp_dir) / "lesson.json"
+            lesson.write_text(
+                json.dumps(
+                    {
+                        "id": "lesson_review_001",
+                        "kind": "lesson",
+                        "scope": "project",
+                        "project": "yomems",
+                        "topic": "review",
+                        "content": "Old review routing rule should no longer be used."
+                    }
+                )
+            )
+
+            self.run_cli("save", "--root", str(root), "--input", str(decision))
+            self.run_cli("save", "--root", str(root), "--input", str(lesson))
+
+            archive_payload = json.loads(
+                self.run_cli("archive", "--root", str(root), "--project", "yomems", "--id", "dec_review_001")
+            )
+            supersede_payload = json.loads(
+                self.run_cli("supersede", "--root", str(root), "--project", "yomems", "--id", "lesson_review_001")
+            )
+
+            self.assertEqual(archive_payload["archived"], "dec-review-001")
+            self.assertEqual(supersede_payload["superseded"], "lesson-review-001")
+
+            active_payload = json.loads(
+                self.run_cli("query", "--root", str(root), "--project", "yomems", "--topic", "review")
+            )
+            self.assertEqual(active_payload, [])
+
+            archived_payload = json.loads(
+                self.run_cli(
+                    "query",
+                    "--root",
+                    str(root),
+                    "--project",
+                    "yomems",
+                    "--status",
+                    "archived",
+                )
+            )
+            superseded_payload = json.loads(
+                self.run_cli(
+                    "query",
+                    "--root",
+                    str(root),
+                    "--project",
+                    "yomems",
+                    "--status",
+                    "superseded",
+                )
+            )
+            self.assertEqual(archived_payload[0]["id"], "dec-review-001")
+            self.assertEqual(superseded_payload[0]["id"], "lesson-review-001")
+
+            topics_text = (root / "TOPICS.md").read_text()
+            self.assertIn("No indexed topics yet.", topics_text)
+
+    def test_refresh_index_rebuilds_derived_files(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="yomems-store-") as tmp_dir:
+            root = Path(tmp_dir) / ".yomems"
+            self.run_cli("init", "--root", str(root))
+
+            decision = Path(tmp_dir) / "decision.json"
+            decision.write_text(
+                json.dumps(
+                    {
+                        "id": "dec_refresh_001",
+                        "kind": "project_decision",
+                        "scope": "project",
+                        "project": "yomems",
+                        "topic": "index",
+                        "content": "Indexes should be rebuildable on demand."
+                    }
+                )
+            )
+            self.run_cli("save", "--root", str(root), "--input", str(decision))
+
+            for filename in ("INDEX.md", "TOPICS.md", "active-context.md", ".index.json"):
+                (root / filename).unlink()
+
+            refresh_payload = json.loads(self.run_cli("refresh-index", "--root", str(root)))
+            self.assertEqual(refresh_payload["status"], "ok")
+            self.assertTrue((root / "INDEX.md").exists())
+            self.assertTrue((root / "TOPICS.md").exists())
+            self.assertTrue((root / "active-context.md").exists())
+            self.assertTrue((root / ".index.json").exists())
+
     def test_save_normalizes_id_and_topic_slugs(self) -> None:
         with tempfile.TemporaryDirectory(prefix="yomems-store-") as tmp_dir:
             root = Path(tmp_dir) / ".yomems"

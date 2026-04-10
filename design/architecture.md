@@ -37,8 +37,11 @@ Simple CLI commands:
 - `init`
 - `propose`
 - `save`
+- `archive`
+- `supersede`
 - `approve`
 - `reject`
+- `refresh-index`
 - `candidates`
 - `query`
 - `context`

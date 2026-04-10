@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from yomems.models import MemoryObject
+from yomems.models import MemoryObject, now_iso
 
 
 KIND_TO_DIRECTORY = {
@@ -67,6 +67,9 @@ class MemoryStore:
         self._write_markdown(path, memory)
         self._rebuild_indexes()
 
+    def refresh_indexes(self) -> None:
+        self._rebuild_indexes()
+
     def propose(self, memory: MemoryObject) -> None:
         memory = self._normalized_memory(memory)
         memory.validate_candidate()
@@ -97,6 +100,12 @@ class MemoryStore:
             candidate_path.unlink()
         self._rebuild_indexes()
         return str(candidate["id"])
+
+    def archive(self, memory_id: str, project: str = "") -> MemoryObject:
+        return self._update_committed_status(memory_id, "archived", project)
+
+    def supersede(self, memory_id: str, project: str = "") -> MemoryObject:
+        return self._update_committed_status(memory_id, "superseded", project)
 
     def query(
         self,
@@ -557,6 +566,10 @@ class MemoryStore:
             self._rebuild_indexes()
         return json.loads(self.candidate_index_path.read_text()).get("entries", [])
 
+    def _load_committed_index_fresh(self) -> list[dict[str, Any]]:
+        self._rebuild_indexes()
+        return self._load_committed_index()
+
     def _find_candidate(self, candidate_id: str, project: str = "") -> dict[str, Any]:
         entries = self._load_candidate_index()
         if project:
@@ -565,6 +578,17 @@ class MemoryStore:
             if project and item.get("project", "") != project:
                 continue
             if self._candidate_id_matches(candidate_id, item):
+                return item
+        return {}
+
+    def _find_committed(self, memory_id: str, project: str = "") -> dict[str, Any]:
+        entries = self._load_committed_index_fresh()
+        if project:
+            project = self._normalize_project_name(project)
+        for item in entries:
+            if project and item.get("project", "") != project:
+                continue
+            if self._candidate_id_matches(memory_id, item):
                 return item
         return {}
 
@@ -578,6 +602,53 @@ class MemoryStore:
         if not item_kind:
             return False
         return self._normalize_id(candidate_id, item_kind) == item_id
+
+    def _update_committed_status(
+        self,
+        memory_id: str,
+        status: str,
+        project: str = "",
+    ) -> MemoryObject:
+        item = self._find_committed(memory_id, project)
+        if not item:
+            raise ValueError(f"memory not found: {memory_id}")
+        memory = self._memory_from_item(item)
+        memory.status = status
+        memory.updated_at = now_iso()
+        path = Path(item["path"])
+        self._write_markdown(path, memory)
+        self._rebuild_indexes()
+        return memory
+
+    def _memory_from_item(self, item: dict[str, Any]) -> MemoryObject:
+        metadata = {
+            "title": item.get("title", ""),
+            "details": item.get("details", ""),
+            "context": item.get("context", ""),
+            "decision": item.get("decision", ""),
+            "consequences": item.get("consequences", ""),
+            "usage": item.get("usage", ""),
+            "problem": item.get("problem", ""),
+            "next_steps": item.get("next_steps", ""),
+            "findings": item.get("findings", ""),
+            "document": item.get("document", ""),
+        }
+        return MemoryObject(
+            id=str(item.get("id", "")).strip(),
+            kind=str(item.get("kind", "")).strip(),
+            scope=str(item.get("scope", "")).strip(),
+            content=str(item.get("content", "")).strip(),
+            project=str(item.get("project", "")).strip(),
+            task_id=str(item.get("task_id", "")).strip(),
+            topic=str(item.get("topic", "")).strip(),
+            tags=[str(tag).strip() for tag in item.get("tags", []) if str(tag).strip()],
+            priority=str(item.get("priority", "medium")).strip() or "medium",
+            status=str(item.get("status", "active")).strip() or "active",
+            confidence=str(item.get("confidence", "confirmed")).strip() or "confirmed",
+            updated_at=str(item.get("updated_at", "")).strip() or now_iso(),
+            source=[str(source).strip() for source in item.get("source", []) if str(source).strip()],
+            metadata={key: value for key, value in metadata.items() if str(value).strip()},
+        )
 
     def _priority_rank(self, value: str) -> int:
         return {"low": 1, "medium": 2, "high": 3, "critical": 4}.get(value, 0)

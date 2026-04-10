@@ -23,6 +23,7 @@ This repository implements a filesystem-backed MVP with:
 - compact derived indexes for fast lookup
 - candidate and committed memory separation
 - CLI commands to initialize, propose, save, approve, query, and build intent-oriented context packs
+- explicit lifecycle commands for archive, supersede, and index refresh
 
 ## Memory Object Types
 
@@ -135,6 +136,26 @@ Save a memory object directly when the user already decided to persist it:
 ```bash
 python3 -m yomems save \
   --input ./examples/project-decision.json
+```
+
+Archive or supersede committed memory explicitly:
+
+```bash
+python3 -m yomems archive \
+  --root .yomems \
+  --project yomems \
+  --id dec_review_intent_001
+
+python3 -m yomems supersede \
+  --root .yomems \
+  --project yomems \
+  --id lesson_old_review_rule
+```
+
+Rebuild derived indexes from markdown files:
+
+```bash
+python3 -m yomems refresh-index --root .yomems
 ```
 
 Query memory objects:

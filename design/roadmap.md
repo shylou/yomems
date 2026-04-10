@@ -12,6 +12,7 @@ The current implementation already provides:
 - candidate and committed memory separation
 - workspace-root project buckets
 - first-class `investigation` records for long-form analysis
+- explicit lifecycle commands for `archive`, `supersede`, and `refresh-index`
 - host-local skill bundles for Codex and Claude
 
 ## Remaining Milestones
@@ -29,18 +30,7 @@ The current packs (`continue-task`, `review-context`, `project-onboard`,
 `preferences`) are enough for the MVP, but not yet broad enough to cover the
 full workflow set.
 
-### Milestone 2: Promotion Pipeline
-
-Add explicit lifecycle commands such as:
-
-- `archive`
-- `supersede`
-- `refresh-index`
-
-so the lifecycle becomes explicit instead of being managed only by direct file
-replacement and index rebuilds.
-
-### Milestone 3: Ranking and Retrieval Quality
+### Milestone 2: Ranking and Retrieval Quality
 
 Improve retrieval with:
 
@@ -52,7 +42,7 @@ Improve retrieval with:
 The current retrieval path is intentionally simple and deterministic. It works,
 but it does not yet optimize ranking deeply.
 
-### Milestone 4: Agent Adapters Hardening
+### Milestone 3: Agent Adapters Hardening
 
 Codex and Claude wrappers now exist, but they still need hardening around host
 behavior and user prompting. Remaining work is:

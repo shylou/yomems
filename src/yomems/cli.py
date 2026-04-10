@@ -64,6 +64,19 @@ def build_parser() -> argparse.ArgumentParser:
     save_parser.add_argument("--root", default=".yomems")
     save_parser.add_argument("--input", required=True)
 
+    archive_parser = subparsers.add_parser("archive", help="Archive a committed memory object")
+    archive_parser.add_argument("--root", default=".yomems")
+    archive_parser.add_argument("--id", required=True)
+    archive_parser.add_argument("--project", default="")
+
+    supersede_parser = subparsers.add_parser("supersede", help="Mark a committed memory object as superseded")
+    supersede_parser.add_argument("--root", default=".yomems")
+    supersede_parser.add_argument("--id", required=True)
+    supersede_parser.add_argument("--project", default="")
+
+    refresh_parser = subparsers.add_parser("refresh-index", help="Rebuild derived indexes from markdown files")
+    refresh_parser.add_argument("--root", default=".yomems")
+
     approve_parser = subparsers.add_parser("approve", help="Approve and commit a candidate memory object")
     approve_parser.add_argument("--root", default=".yomems")
     approve_parser.add_argument("--id", required=True)
@@ -194,6 +207,24 @@ def main(argv: list[str] | None = None) -> int:
         memory = MemoryObject.from_dict(payload)
         store.save(memory)
         print(json.dumps({"status": "ok", "mode": "committed", "id": memory.id}, indent=2))
+        return 0
+
+    if args.command == "archive":
+        store = MemoryStore(Path(args.root))
+        memory = store.archive(args.id, project=args.project)
+        print(json.dumps({"status": "ok", "archived": memory.id}, indent=2))
+        return 0
+
+    if args.command == "supersede":
+        store = MemoryStore(Path(args.root))
+        memory = store.supersede(args.id, project=args.project)
+        print(json.dumps({"status": "ok", "superseded": memory.id}, indent=2))
+        return 0
+
+    if args.command == "refresh-index":
+        store = MemoryStore(Path(args.root))
+        store.refresh_indexes()
+        print(json.dumps({"status": "ok", "refreshed": str(store.root)}, indent=2))
         return 0
 
     if args.command == "approve":
