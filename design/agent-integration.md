@@ -4,6 +4,13 @@ This document defines how an agent should use YOMems during normal work.
 
 YOMems should feel like a lightweight memory layer inside an agent workflow, not a separate system the user has to operate manually on every turn.
 
+The preferred deployment model is a workspace-level memory root plus a
+host-local skill bundle:
+
+- workspace memory: `<workspace>/.yomems/`
+- Codex skill: `~/.codex/skills/yomems/`
+- Claude skill: `~/.claude/skills/yomems/`
+
 ## Integration Goals
 
 An agent should be able to:
@@ -34,7 +41,8 @@ Examples:
 Preferred query:
 
 ```bash
-python3 -m yomems wake --project <project> --intent project-onboard --keyword "<user-topic>" --limit 3
+ROOT="$(bash <skill-dir>/scripts/resolve-memory-root.sh)"
+bash <skill-dir>/bin/yomems wake --root "$ROOT" --project <project> --intent project-onboard --keyword "<user-topic>" --limit 3
 ```
 
 ### 1. Architecture or design work
@@ -48,7 +56,8 @@ Examples:
 Preferred query:
 
 ```bash
-python3 -m yomems wake --project <project> --intent project-onboard --keyword "<topic>" --limit 3
+ROOT="$(bash <skill-dir>/scripts/resolve-memory-root.sh)"
+bash <skill-dir>/bin/yomems wake --root "$ROOT" --project <project> --intent project-onboard --keyword "<topic>" --limit 3
 ```
 
 ### 2. Complex code analysis
@@ -62,7 +71,8 @@ Examples:
 Preferred query:
 
 ```bash
-python3 -m yomems wake --project <project> --intent project-onboard --keyword "<module-or-problem>" --limit 3
+ROOT="$(bash <skill-dir>/scripts/resolve-memory-root.sh)"
+bash <skill-dir>/bin/yomems wake --root "$ROOT" --project <project> --intent project-onboard --keyword "<module-or-problem>" --limit 3
 ```
 
 ### 3. Review and follow-up decisions
@@ -76,7 +86,8 @@ Examples:
 Preferred query:
 
 ```bash
-python3 -m yomems wake --project <project> --intent review-context --task-id <task-id> --keyword review --limit 3
+ROOT="$(bash <skill-dir>/scripts/resolve-memory-root.sh)"
+bash <skill-dir>/bin/yomems wake --root "$ROOT" --project <project> --intent review-context --task-id <task-id> --keyword review --limit 3
 ```
 
 ### 4. Task continuation
@@ -90,7 +101,8 @@ Examples:
 Preferred query:
 
 ```bash
-python3 -m yomems wake --project <project> --intent continue-task --task-id <task-id> --limit 3
+ROOT="$(bash <skill-dir>/scripts/resolve-memory-root.sh)"
+bash <skill-dir>/bin/yomems wake --root "$ROOT" --project <project> --intent continue-task --task-id <task-id> --limit 3
 ```
 
 ## Save Triggers
@@ -143,20 +155,22 @@ Example:
 Recommended helper call:
 
 ```bash
-python3 -m yomems check --root .yomems --input ./candidate.json
-python3 -m yomems suggest --input ./candidate.json
+ROOT="$(bash <skill-dir>/scripts/resolve-memory-root.sh)"
+bash <skill-dir>/bin/yomems check --root "$ROOT" --input ./candidate.json
+bash <skill-dir>/bin/yomems suggest --input ./candidate.json
 ```
 
 Preferred combined helper call:
 
 ```bash
-python3 -m yomems prepare --root .yomems --input ./candidate.json
+ROOT="$(bash <skill-dir>/scripts/resolve-memory-root.sh)"
+bash <skill-dir>/bin/yomems prepare --root "$ROOT" --input ./candidate.json
 ```
 
 Direct flag-based helper:
 
 ```bash
-python3 -m yomems remember --id <id> --kind <kind> --scope <scope> --project <project> --summary "<summary>"
+bash <skill-dir>/bin/yomems remember --root "$ROOT" --id <id> --kind <kind> --scope <scope> --project <project> --summary "<summary>"
 ```
 
 ## Save Strategy
@@ -187,7 +201,8 @@ If the user explicitly requested a memory lookup, step 1 should happen before th
 
 ## Host Integration
 
-In Codex or Claude, YOMems should be treated as a helper bundle that the agent can call when:
+In Codex or Claude, YOMems should be treated as a host-local skill bundle that
+the agent can call when:
 
 - planning starts
 - deeper implementation analysis starts
@@ -195,3 +210,12 @@ In Codex or Claude, YOMems should be treated as a helper bundle that the agent c
 - a durable insight appears
 
 It should not run on every trivial turn.
+
+Preferred skill directory resolution:
+
+- Claude: `~/.claude/skills/yomems/`
+- Codex: `~/.codex/skills/yomems/`
+
+The agent should resolve the workspace memory root before query or save. It
+should not default to broad filesystem search such as `find /root` when the
+user explicitly requested a memory lookup.

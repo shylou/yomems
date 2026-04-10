@@ -1,16 +1,20 @@
 # Roadmap
 
-## Current State
+## Completed Milestones
 
-The MVP currently provides:
+The current implementation already provides:
 
 - fixed `.yomems/` repository layout
 - typed memory objects
 - markdown memory files
 - compact derived indexes
-- query and context CLI
+- query/context/wake CLI
+- candidate and committed memory separation
+- workspace-root project buckets
+- first-class `investigation` records for long-form analysis
+- host-local skill bundles for Codex and Claude
 
-## Next Milestones
+## Remaining Milestones
 
 ### Milestone 1: Better Context Packs
 
@@ -21,27 +25,22 @@ Add richer intent packs such as:
 - `prepare-review`
 - `handoff`
 
-### Milestone 2: Investigation Records
+The current packs (`continue-task`, `review-context`, `project-onboard`,
+`preferences`) are enough for the MVP, but not yet broad enough to cover the
+full workflow set.
 
-Add a first-class object type for analysis that is not yet durable memory.
+### Milestone 2: Promotion Pipeline
 
-This will allow:
-
-- draft findings
-- rejected alternatives
-- promotion into lessons or decisions
-
-### Milestone 3: Promotion Pipeline
-
-Add a CLI flow such as:
+Add explicit lifecycle commands such as:
 
 - `archive`
 - `supersede`
 - `refresh-index`
 
-so the lifecycle becomes explicit instead of manual.
+so the lifecycle becomes explicit instead of being managed only by direct file
+replacement and index rebuilds.
 
-### Milestone 4: Ranking and Retrieval Quality
+### Milestone 3: Ranking and Retrieval Quality
 
 Improve retrieval with:
 
@@ -50,15 +49,20 @@ Improve retrieval with:
 - task/topic-aware ranking
 - optional semantic reranking on filtered candidates only
 
-### Milestone 5: Agent Adapters
+The current retrieval path is intentionally simple and deterministic. It works,
+but it does not yet optimize ranking deeply.
 
-Provide thin wrappers for:
+### Milestone 4: Agent Adapters Hardening
 
-- Codex
-- Claude
-- generic CLI agents
+Codex and Claude wrappers now exist, but they still need hardening around host
+behavior and user prompting. Remaining work is:
 
-These adapters should only convert environment context into YOMems queries. They should not fork the schema.
+- verify skill discovery works reliably across hosts
+- reduce fallback-to-filesystem behavior further
+- add one or more generic CLI-agent adapter examples
+
+These adapters should only convert environment context into YOMems queries.
+They should not fork the schema.
 
 ## Non-Goals For The MVP
 
