@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "YOMems Memory Object",
+  "type": "object",
+  "required": ["id", "kind", "scope", "content"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "identity_fact",
+        "project_fact",
+        "project_decision",
+        "lesson",
+        "active_task"
+      ]
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["global", "project", "task"]
+    },
+    "project": { "type": "string" },
+    "task_id": { "type": "string" },
+    "topic": { "type": "string" },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "priority": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "superseded", "archived"]
+    },
+    "confidence": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "content": { "type": "string", "minLength": 1 },
+    "source": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "metadata": { "type": "object" }
+  }
+}

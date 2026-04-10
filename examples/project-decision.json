@@ -1,0 +1,16 @@
+{
+  "id": "dec_review_intent_001",
+  "kind": "project_decision",
+  "scope": "project",
+  "project": "yomems",
+  "topic": "context-routing",
+  "tags": ["routing", "context", "mvp"],
+  "priority": "high",
+  "status": "active",
+  "confidence": "confirmed",
+  "content": "Intent-oriented context packs should be the primary read path instead of loading full memory documents.",
+  "source": ["README.md"],
+  "metadata": {
+    "why": "This keeps startup cheap and agent-agnostic."
+  }
+}
